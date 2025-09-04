@@ -1,0 +1,49 @@
+{
+  "Sim_L": {
+    "Pretrain": {
+      "section": "1",
+      "training_epoch": 100,
+      "learning_rate": 0.001,
+      "weight_decay": 0,
+      "weight1": 5.0,
+      "weight2": 5.0,
+      "weight_bi": 10,
+      "weight_adv": 0.1,
+      "weight_kl": 1e-6,
+      "weight_moe": 1e2,
+      "optimizer": "AdamW",
+      "earlystop": false,
+      "early_stop_patience": 20
+    },
+    "RNA-ADT": {
+      "section": "2",
+      "training_epoch": 100,
+      "learning_rate": 0.01,
+      "weight_decay": 0,
+      "weight1": 5.0,
+      "weight2": 1.0,
+      "weight_bi": 10,
+      "weight_adv": 0.1,
+      "weight_kl": 1e-6,
+      "weight_moe": 1e2,
+      "optimizer": "SGD",
+      "earlystop": true,
+      "early_stop_patience": 20
+    },
+    "ADT-RNA": {
+      "section": "3",
+      "training_epoch": 100,
+      "learning_rate": 0.01,
+      "weight_decay": 0,
+      "weight1": 5.0,
+      "weight2": 1.0,
+      "weight_bi": 10,
+      "weight_adv": 0.1,
+      "weight_kl": 1e-6,
+      "weight_moe": 1e2,
+      "optimizer": "SGD",
+      "earlystop": true,
+      "early_stop_patience": 20
+    }
+  }
+}

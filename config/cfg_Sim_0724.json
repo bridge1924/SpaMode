@@ -1,0 +1,55 @@
+{
+  "scMultiSim": {
+    "111": {
+      "RNA_Path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_111_rna.h5ad",
+      "ADT_Path": "",
+      "ATAC_Path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_111_atac.h5ad",
+      "GT_path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_111_GT.txt",
+      "training_epoch": 1000,
+      "learning_rate": 0.0001,
+      "weight_decay": 0,
+      "weight_recon": [1.0,1.0],
+      "weight_bi": 10,
+      "weight_adv": 0.1,
+      "weight_kl": 1e-6,
+      "weight_moe": 1e2,
+      "optimizer": "AdamW",
+      "earlystop": true,
+      "early_stop_patience": 20
+    },
+    "222": {
+      "RNA_Path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_222_rna.h5ad",
+      "ADT_Path": "",
+      "ATAC_Path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_222_atac.h5ad",
+      "GT_path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_222_GT.txt",
+      "training_epoch": 1000,
+      "learning_rate": 0.0001,
+      "weight_decay": 0,
+      "weight_recon": [1.0,1.0],
+      "weight_bi": 10,
+      "weight_adv": 0.1,
+      "weight_kl": 1e-6,
+      "weight_moe": 1e2,
+      "optimizer": "AdamW",
+      "earlystop": true,
+      "early_stop_patience": 20
+    },
+    "333": {
+      "RNA_Path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_333_rna.h5ad",
+      "ADT_Path": "",
+      "ATAC_Path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_333_atac.h5ad",
+      "GT_path": "/home/hxl/Spa_Multi-omics/Data/Sim_0724/slice_333_GT.txt",
+      "training_epoch": 100,
+      "learning_rate": 0.0001,
+      "weight_decay": 0,
+      "weight_recon": [5.0,5.0],
+      "weight_bi": 10,
+      "weight_adv": 0.1,
+      "weight_kl": 1e-6,
+      "weight_moe": 1e2,
+      "optimizer": "AdamW",
+      "earlystop": true,
+      "early_stop_patience": 10
+    }
+  }
+}
