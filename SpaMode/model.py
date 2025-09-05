@@ -118,21 +118,16 @@ class Encoder_overall(Module):
         return results
 
     def get_discriminator_pred(self, emb_latent_combined, one_indices, zero_indices):
-        ## 根据采样坐标构建正负样本对，假设采样坐标的数量为M
-
         if one_indices is not None:
             one_paired_features = emb_latent_combined[one_indices]
             zero_paired_features = emb_latent_combined[zero_indices]
 
-            # 创建一个索引数组，用于混淆顺序
             M = one_paired_features.shape[0]
-            indices = torch.randperm(M * 2)  # 随机打乱索引
+            indices = torch.randperm(M * 2)
 
-            # 混合样本特征，但不改变特征本身
-            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)  # 先合并特征
-            mixed_features = mixed_features[indices]  # 按照混淆后的顺序重新排序
+            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)
+            mixed_features = mixed_features[indices]
 
-            # 创建对应的标签
             mixed_labels = torch.cat((torch.ones(M), torch.zeros(M)))[indices]
 
             discriminator_pred = self.discriminator(mixed_features.view(mixed_features.shape[0], -1))
@@ -158,20 +153,12 @@ class Encoder_overall(Module):
         return discriminator_pred, mixed_labels
 
     def reparameterize(self, mu, logvar):
-        """
-        重参数化技巧：从标准正态分布中采样，生成潜在变量z
-        :param mu: 均值
-        :param logvar: 对数方差
-        :return: 潜在变量z
-        """
-        std = torch.exp(0.5 * logvar)  # 标准差
-        eps = torch.randn_like(std)  # 采样噪声
-        z = mu + std * eps  # 生成潜在变量z
-
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        z = mu + std * eps
         return z
 
     def cal_kl_loss(self, mu, logvar):
-        # -0.5 * (1 + 2 * std.log() - mu.pow(2) - std.pow(2)).sum(1).mean().div(math.log(2))
         kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()).mean().div(math.log(2))
         return kl
 
@@ -266,21 +253,17 @@ class Encoder_single(Module):
         return results
 
     def get_discriminator_pred(self, emb_latent_combined, one_indices, zero_indices):
-        ## 根据采样坐标构建正负样本对，假设采样坐标的数量为M
 
         if one_indices is not None:
             one_paired_features = emb_latent_combined[one_indices]
             zero_paired_features = emb_latent_combined[zero_indices]
 
-            # 创建一个索引数组，用于混淆顺序
             M = one_paired_features.shape[0]
-            indices = torch.randperm(M * 2)  # 随机打乱索引
+            indices = torch.randperm(M * 2)
 
-            # 混合样本特征，但不改变特征本身
-            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)  # 先合并特征
-            mixed_features = mixed_features[indices]  # 按照混淆后的顺序重新排序
+            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)
+            mixed_features = mixed_features[indices]
 
-            # 创建对应的标签
             mixed_labels = torch.cat((torch.ones(M), torch.zeros(M)))[indices]
 
             discriminator_pred = self.discriminator(mixed_features.view(mixed_features.shape[0], -1))
@@ -306,20 +289,13 @@ class Encoder_single(Module):
         return discriminator_pred, mixed_labels
 
     def reparameterize(self, mu, logvar):
-        """
-        重参数化技巧：从标准正态分布中采样，生成潜在变量z
-        :param mu: 均值
-        :param logvar: 对数方差
-        :return: 潜在变量z
-        """
-        std = torch.exp(0.5 * logvar)  # 标准差
-        eps = torch.randn_like(std)  # 采样噪声
-        z = mu + std * eps  # 生成潜在变量z
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        z = mu + std * eps
 
         return z
 
     def cal_kl_loss(self, mu, logvar):
-        # -0.5 * (1 + 2 * std.log() - mu.pow(2) - std.pow(2)).sum(1).mean().div(math.log(2))
         kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()).mean().div(math.log(2))
         return kl
 
@@ -515,8 +491,8 @@ class VAEEncoder(nn.Module):
 
     def manual_instance_norm_2d(self, x, eps=1e-5):
         # x shape: (N, D)
-        mean = x.mean(dim=1, keepdim=True)  # 沿特征维度 D 计算均值
-        var = x.var(dim=1, keepdim=True)  # 沿特征维度 D 计算方差
+        mean = x.mean(dim=1, keepdim=True)
+        var = x.var(dim=1, keepdim=True)  
         x_norm = (x - mean) / torch.sqrt(var + eps)
         return x_norm
 

@@ -159,21 +159,16 @@ class Encoder_overall(Module):
         return results
 
     def get_discriminator_pred(self, emb_latent_combined, one_indices, zero_indices):
-        ## 根据采样坐标构建正负样本对，假设采样坐标的数量为M
-
         if one_indices is not None:
             one_paired_features = emb_latent_combined[one_indices]
             zero_paired_features = emb_latent_combined[zero_indices]
 
-            # 创建一个索引数组，用于混淆顺序
             M = one_paired_features.shape[0]
-            indices = torch.randperm(M * 2)  # 随机打乱索引
+            indices = torch.randperm(M * 2)
 
-            # 混合样本特征，但不改变特征本身
-            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)  # 先合并特征
-            mixed_features = mixed_features[indices]  # 按照混淆后的顺序重新排序
+            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)
+            mixed_features = mixed_features[indices]
 
-            # 创建对应的标签
             mixed_labels = torch.cat((torch.ones(M), torch.zeros(M)))[indices]
 
             discriminator_pred = self.discriminator(mixed_features.view(mixed_features.shape[0], -1))
@@ -199,20 +194,13 @@ class Encoder_overall(Module):
         return discriminator_pred, mixed_labels
 
     def reparameterize(self, mu, logvar):
-        """
-        重参数化技巧：从标准正态分布中采样，生成潜在变量z
-        :param mu: 均值
-        :param logvar: 对数方差
-        :return: 潜在变量z
-        """
-        std = torch.exp(0.5 * logvar)  # 标准差
-        eps = torch.randn_like(std)  # 采样噪声
-        z = mu + std * eps  # 生成潜在变量z
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        z = mu + std * eps
 
         return z
 
     def cal_kl_loss(self, mu, logvar):
-        # -0.5 * (1 + 2 * std.log() - mu.pow(2) - std.pow(2)).sum(1).mean().div(math.log(2))
         kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()).mean().div(math.log(2))
         return kl
 
@@ -307,21 +295,16 @@ class Encoder_single(Module):
         return results
 
     def get_discriminator_pred(self, emb_latent_combined, one_indices, zero_indices):
-        ## 根据采样坐标构建正负样本对，假设采样坐标的数量为M
-
         if one_indices is not None:
             one_paired_features = emb_latent_combined[one_indices]
             zero_paired_features = emb_latent_combined[zero_indices]
 
-            # 创建一个索引数组，用于混淆顺序
             M = one_paired_features.shape[0]
-            indices = torch.randperm(M * 2)  # 随机打乱索引
+            indices = torch.randperm(M * 2)
 
-            # 混合样本特征，但不改变特征本身
-            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)  # 先合并特征
-            mixed_features = mixed_features[indices]  # 按照混淆后的顺序重新排序
+            mixed_features = torch.cat((one_paired_features, zero_paired_features), dim=0)
+            mixed_features = mixed_features[indices]
 
-            # 创建对应的标签
             mixed_labels = torch.cat((torch.ones(M), torch.zeros(M)))[indices]
 
             discriminator_pred = self.discriminator(mixed_features.view(mixed_features.shape[0], -1))
@@ -347,20 +330,12 @@ class Encoder_single(Module):
         return discriminator_pred, mixed_labels
 
     def reparameterize(self, mu, logvar):
-        """
-        重参数化技巧：从标准正态分布中采样，生成潜在变量z
-        :param mu: 均值
-        :param logvar: 对数方差
-        :return: 潜在变量z
-        """
-        std = torch.exp(0.5 * logvar)  # 标准差
-        eps = torch.randn_like(std)  # 采样噪声
-        z = mu + std * eps  # 生成潜在变量z
-
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        z = mu + std * eps
         return z
 
     def cal_kl_loss(self, mu, logvar):
-        # -0.5 * (1 + 2 * std.log() - mu.pow(2) - std.pow(2)).sum(1).mean().div(math.log(2))
         kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()).mean().div(math.log(2))
         return kl
 
@@ -454,8 +429,6 @@ class MLP(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, dropout_rate=0.5, if_bn=False):
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
-        # self.relu = nn.PReLU()
-        # self.dropout = nn.Dropout(p=dropout_rate)
         self.fc2 = nn.Linear(hidden_size, output_size)
 
         self.if_bn = if_bn
@@ -475,8 +448,6 @@ class MLP(nn.Module):
         if self.if_bn:
             out = self.bn1(out)
 
-        # out = self.relu(out)
-        # out = self.dropout(out)
         out = self.fc2(out)
         return out
 
@@ -500,7 +471,6 @@ class Discriminator(nn.Module):
         self.fc1 = nn.Linear(input_dim, 32)
         self.fc2 = nn.Linear(32, output_dim)
         self.relu = nn.LeakyReLU(negative_slope=0.01)
-        # self.dp = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
 
         self.grl = GRL()
@@ -509,12 +479,9 @@ class Discriminator(nn.Module):
         torch.nn.init.xavier_uniform_(self.fc2.weight)
 
     def forward(self, x, if_grl=True):
-        # x = self.manual_instance_norm_2d(x)
         if if_grl:
             x = self.grl(x)
         x = self.fc1(x)
-        # x = self.relu(x)
-        # x = self.dp(x)
         x = self.fc2(x)
         x = self.sigmoid(x)
 
@@ -525,10 +492,6 @@ class VAEEncoder(nn.Module):
         super(VAEEncoder, self).__init__()
         self.weight = Parameter(torch.FloatTensor(input_dim, 128))
 
-        # self.GAT = GATLayer(input_dim, 128)
-
-        # 假设我们用一个简单的全连接网络
-        # self.fc1 = nn.Linear(128, 128)
         self.fc2_mu = nn.Linear(128, latent_dim)  # 均值
         self.fc2_logvar = nn.Linear(128, latent_dim)  # 对数方差
 
@@ -538,34 +501,25 @@ class VAEEncoder(nn.Module):
         self.bn1 = nn.BatchNorm1d(128)
 
         self.reset_parameters(self.weight)
-        # self.reset_parameters(self.GAT.weight)
 
-        # self.reset_parameters(self.fc1.weight)
         self.reset_parameters(self.fc2_mu.weight)
         self.reset_parameters(self.fc2_logvar.weight)
         self.reset_parameters(self.fc2_mu_inv.weight)
         self.reset_parameters(self.fc2_logvar_inv.weight)
-
-        # self.fc2_mu.bias.data.zero_()
-        # self.fc2_logvar.bias.data.zero_()
-        # self.fc2_mu_inv.bias.data.zero_()
-        # self.fc2_logvar_inv.bias.data.zero_()
 
     def reset_parameters(self, weight):
         torch.nn.init.xavier_uniform_(weight)
 
     def manual_instance_norm_2d(self, x, eps=1e-5):
         # x shape: (N, D)
-        mean = x.mean(dim=1, keepdim=True)  # 沿特征维度 D 计算均值
-        var = x.var(dim=1, keepdim=True)  # 沿特征维度 D 计算方差
+        mean = x.mean(dim=1, keepdim=True)
+        var = x.var(dim=1, keepdim=True)
         x_norm = (x - mean) / torch.sqrt(var + eps)
         return x_norm
 
     def forward(self, x, adj):
         feat_embeding = torch.mm(x, self.weight)
         x = torch.mm(adj, feat_embeding)
-
-        # x = self.GAT(x, adj)
 
         x = self.manual_instance_norm_2d(x)
 
@@ -621,16 +575,10 @@ class MoE(nn.Module):
         else:
             assert num_experts_1hop <= num_experts
             self.num_experts_1hop = num_experts_1hop
-        # instantiate experts
-        # self.experts = nn.ModuleList([MLP(self.input_size, self.output_size, self.hidden_size) for i in range(self.num_experts)])
-        # self.experts_conv = experts_conv
-        # self.experts_bn = experts_bn
+
 
         self.w_gate = nn.Parameter(torch.zeros(input_size, num_experts), requires_grad=True)
         self.w_noise = nn.Parameter(torch.zeros(input_size, num_experts), requires_grad=True)
-
-        # torch.nn.init.xavier_uniform_(self.w_gate)
-        # torch.nn.init.xavier_uniform_(self.w_noise)
 
         self.softplus = nn.Softplus()
         self.softmax = nn.Softmax(1)
@@ -649,7 +597,6 @@ class MoE(nn.Module):
         a `Scalar`.
         """
         eps = 1e-10
-        # if only num_experts = 1
 
         if x.shape[0] == 1:
             return torch.tensor([0], device=x.device, dtype=x.dtype)
@@ -748,22 +695,7 @@ class MoE(nn.Module):
         gates, load = self.noisy_top_k_gating(x, training)
         # calculate importance loss
         importance = gates.sum(0)
-        #
         loss_cv_squared = self.cv_squared(importance) + self.cv_squared(load)
-
-        # expert_outputs = []
-        # for i in range(self.num_experts):
-        #     if i < self.num_experts_1hop:
-        #         expert_i_output = self.experts_conv[i](x, edge_index, edge_attr)
-        #     else:
-        #         expert_i_output = self.experts_conv[i](x, edge_index_2hop, edge_attr_2hop)
-        #     expert_i_output = self.experts_bn[i](expert_i_output)
-        #     expert_outputs.append(expert_i_output)
-        # expert_outputs = torch.stack(expert_outputs, dim=1) # shape=[num_nodes, num_experts, d_feature]
-        #
-        # # gates: shape=[num_nodes, num_experts]
-        # y = gates.unsqueeze(dim=-1) * expert_outputs
-        # y = y.mean(dim=1)
 
         return gates, loss_cv_squared
 

@@ -126,7 +126,7 @@ class Train_SpaMode:
             self.model.train()
             adj = self.paramed_fuse_adj().to(self.device)
             self.zero_indices, self.one_indices = self.get_heterogeneous_label(self.global_adj)
-            # random resample 控制正负样本对比例均衡
+
             N = self.zero_indices.shape[0]
             random_indices = torch.randint(0, len(self.one_indices), (N,))
             sampled_indices = self.one_indices[random_indices]
@@ -134,8 +134,6 @@ class Train_SpaMode:
             results = self.model(self.feat_list, adj, self.adj_spatial, sampled_indices, self.zero_indices)
 
             loss, recon_loss, kl_loss, Biloss, adv_loss, moe_loss = self.loss(results, self.feat_list)
-
-            # loss = loss
 
             if self.early_stop:
                 if early_stop_count >= self.early_stop_patience:
@@ -160,14 +158,8 @@ class Train_SpaMode:
             loss.backward()
             self.optimizer.step()
 
-            # if self.scheduler:
-            #     scheduler.step()
 
         print("Model training finished!\n")
-
-        # with torch.no_grad():
-        #     results = self.model(self.features_omics1, self.features_omics2, self.adj_spatial_omics1,
-        #                          adj, self.adj_spatial_omics2, adj, train=False)
 
         emb = results['emb_latent_combined']
 
@@ -175,13 +167,6 @@ class Train_SpaMode:
 
         output = {
                   'SpaMode': emb_combined.detach().cpu().numpy(),
-                  # 'adj': adj_combined.detach().cpu().numpy(),
-                  # 'gates_omics1': results['gates_omics1'].detach().cpu().numpy(),
-                  # 'gates_omics2': results['gates_omics2'].detach().cpu().numpy(),
-                  # 'v_emb_latent_omics1': results['v_emb_latent_omics1'].detach().cpu().numpy(),
-                  # 'v_emb_latent_omics2': results['v_emb_latent_omics2'].detach().cpu().numpy(),
-                  # 'inv_emb_latent_omics1': results['inv_emb_latent_omics1'].detach().cpu().numpy(),
-                  # 'inv_emb_latent_omics2': results['inv_emb_latent_omics2'].detach().cpu().numpy(),
                   }
 
         return output
@@ -304,7 +289,6 @@ class Train_SpaMode:
             recon_loss = recon_loss + F.mse_loss(features_list[i], results['emb_recon_list'][i])*self.arg["weight_recon"][i]
 
         one_hot_labels = torch.nn.functional.one_hot(results['mixed_labels'].long(), num_classes=2).to(self.device)
-        # 无边 --> 标签 1 --> one_hot 0,1
 
         Biloss = self.BCE_loss_0213(results['discriminator_pred'], one_hot_labels.float()) * self.arg["weight_bi"]
 
@@ -314,8 +298,6 @@ class Train_SpaMode:
         moe_loss = results['moe_loss'] * self.arg["weight_moe"]
 
         loss = recon_loss + kl_loss + Biloss + adv_loss + moe_loss
-
-        # loss = recon_loss + kl_loss + Biloss + moe_loss
 
 
         return loss, recon_loss, kl_loss, Biloss, adv_loss, moe_loss
@@ -342,20 +324,17 @@ class Train_SpaMode:
     def BCE_loss_0213(self, logits, targets, weight=0.9):
         epsilon = 1e-10
         logits = torch.sigmoid(logits)
-        # logits = torch.softmax(logits, dim=1)
 
         Biloss = -torch.mean(
             targets * torch.log(logits + epsilon) * weight + (1 - targets) * torch.log(1 - logits + epsilon) * 0.1)
         return Biloss
 
     def get_heterogeneous_label(self, adj):
-        binary_tensor = (adj == 0).to(torch.float)  # 无边为1，有边为0
+        binary_tensor = (adj == 0).to(torch.float)
 
-        # 获取值为 0 的坐标
-        zero_indices = torch.nonzero(binary_tensor == 0)  # 有边的节点pair索引
+        zero_indices = torch.nonzero(binary_tensor == 0)
 
-        # 获取值为 1 的坐标
-        one_indices = torch.nonzero(binary_tensor == 1)  # 无边的节点pair索引
+        one_indices = torch.nonzero(binary_tensor == 1)
 
         return zero_indices, one_indices
 
@@ -378,11 +357,6 @@ class Parametered_Graph(nn.Module):
 
     def forward(self):
         adj = self.paramed_adj_omics
-
-        # _temp = self.paramed_adj_omics.clone()
-        # #
-        # for i in range(10):
-        #     adj = adj + F.gumbel_softmax(_temp, tau=self.tau, hard=self.hard)
 
         adj = (adj + adj.t()) / 2
         adj = nn.ReLU(inplace=False)(adj)

@@ -1,8 +1,6 @@
 import os
 
-# 设置 OpenMP 线程数
 os.environ["OMP_NUM_THREADS"] = "1"
-# 设置 MKL 线程数
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
@@ -24,9 +22,6 @@ from SME.preprocess import construct_neighbor_graph
 from SME.utils import clustering, peak_sets_alignment, gene_sets_alignment
 from cal_matrics import eval
 from SME.Svae import Train_Smoe
-# from SME.Svae_Multi import Train_Smoe_Multi
-# from SME.Svae_0116 import Train_Smoe_Multi
-# from harmony import harmonize
 from harmonypy import run_harmony
 from scipy.sparse import coo_matrix
 from sklearn.neighbors import kneighbors_graph
@@ -38,11 +33,8 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def read_list_from_file(path):
     list = []
-    # 打开文件进行读取，使用 'r' 模式
     with open(path, 'r') as f:
-        # 遍历文件中的每一行，将其转换为整数并添加到列表中
         for line in f:
-            # 去掉行末的换行符，然后将字符串转换为整数
             num = int(line.strip())
             list.append(num)
 
@@ -69,13 +61,10 @@ def combine_BC(adata_list):
     X_combined = np.concatenate(X_list, axis=0)
     spatial_combined = np.concatenate(spatial_list, axis=0)
 
-    # feat_combined = np.concatenate(feat_list, axis=0)
-
     batch_combined = np.concatenate(batch_list, axis=0)
 
     adata_combine = ad.AnnData(X=X_combined)
     adata_combine.obsm['spatial'] = spatial_combined
-    # adata_combine.obsm['feat'] = feat_combined
     adata_combine.obs['Batch'] = batch_combined
 
     return adata_combine
@@ -122,19 +111,9 @@ def TFIDF(count_mat, type_=2):
 
 
 def get_spatial_adj(adj):
-    # 确定矩阵大小
     N = max(adj['x'].max(), adj['y'].max()) + 1  # 矩阵大小为最大索引 + 1
-
-    # 使用scipy.sparse.coo_matrix创建稀疏矩阵
     sparse_matrix = scipy.sparse.coo_matrix((adj['value'], (adj['x'], adj['y'])), shape=(N, N))
-
-    # 转换为密集矩阵
     dense_matrix = sparse_matrix.toarray()
-
-    # if not isinstance(adj, csr_matrix):
-    #     return csr_matrix(adj)
-    # return adj
-
     return csr_matrix(dense_matrix)
 
 
@@ -171,17 +150,6 @@ def data_preprocessing(adata_omics1, adata_omics2):
 
 
 def process_spatial_adj(adata_list, omcis='adata_omics1', key='adj_spatial'):
-    """
-        构建跨多个数据集的空间邻接 DataFrame，处理任意数量的 adata 对象。
-
-        Args:
-            adata_list (list): 包含多个 AnnData 对象的列表。
-            omcis (str): 包含空间邻接信息的 adata 的 obsm 或 uns 键。
-            key (str): 空间邻接矩阵在 adata[omcis].uns 中的键。
-
-        Returns:
-            pd.DataFrame: 包含空间邻接信息的 DataFrame，列名为 'x', 'y', 'value'。
-        """
     num_slices = len(adata_list)
     adj_matrices = [get_spatial_adj(adata[omcis].uns[key]) for adata in adata_list]
     slice_shapes = [adj.shape[0] for adj in adj_matrices]
@@ -197,14 +165,14 @@ def process_spatial_adj(adata_list, omcis='adata_omics1', key='adj_spatial'):
         n_rows_i = slice_shapes[i]
 
         row_coords, col_coords = adj_i.nonzero()
-        values_i = adj_i[row_coords, col_coords].A1  # 获取非零值
+        values_i = adj_i[row_coords, col_coords].A1
 
         row_indices.extend(row_coords + row_offset)
         col_indices.extend(col_coords + col_offset)
         values.extend(values_i)
 
         row_offset += n_rows_i
-        col_offset += n_rows_i  # 假设是对角块，行列偏移量相同
+        col_offset += n_rows_i
 
     spatial_adj_pd = pd.DataFrame({
         'x': row_indices,
@@ -216,17 +184,7 @@ def process_spatial_adj(adata_list, omcis='adata_omics1', key='adj_spatial'):
 
 
 def process_feat_adj(adata_list, omcis='adata_omics1'):
-    """
-    构建跨多个数据集的特征邻接矩阵，处理任意数量的 adata 对象。
 
-    Args:
-        adata_list (list): 包含多个 AnnData 对象的列表。
-        omcis (str): 包含特征邻接信息的 adata 的 obsm 键。
-        key (str): 特征邻接矩阵在 adata[omcis].obsm 中的键。
-
-    Returns:
-        np.ndarray: 拼接后的特征邻接矩阵。
-    """
     num_slices = len(adata_list)
     adj_matrices = [adata[omcis].obsm[key] for adata in adata_list]
     slice_shapes = [adj.shape[0] for adj in adj_matrices]
@@ -256,22 +214,14 @@ def construct_graph_by_feature(adata_omics1, key='feat', k=20, mode="distance", 
 
 
 def build_adjacency_matrix_inter_BC(A, B, K=20):
-    """
-    A: N x 64 的归一化特征矩阵 (numpy)
-    B: M x 64 的归一化特征矩阵 (numpy)
-    K: 每个 A 中的样本与 B 中最相似的 K 个样本构成邻接
-    """
-    # 计算 A 和 B 之间的余弦相似度矩阵
+
     sim_matrix = np.dot(A, B.T)  # N x M
 
-    # 对于 A 中的每个样本，找到 B 中最相似的 K 个样本
     topk_indices = np.argsort(sim_matrix, axis=1)[:, -K:]  # N x K
 
-    # 构建邻接矩阵
     N, M = A.shape[0], B.shape[0]
     adjacency_matrix = np.zeros((N, M), dtype=np.float32)
 
-    # 将最相似的 K 个样本的位置设为 1
     for i in range(N):
         adjacency_matrix[i, topk_indices[i]] = 1
 
@@ -279,17 +229,7 @@ def build_adjacency_matrix_inter_BC(A, B, K=20):
 
 
 def get_feat_adj(adata_list, k=10, feat_key='feat'):
-    """
-    构建跨多个数据集的特征邻接矩阵，处理任意数量的 adata 对象。
 
-    Args:
-        adata_list (list): 包含多个 AnnData 对象的列表。
-        k (int): 构建跨数据集邻接矩阵时，每个样本考虑的近邻数量。
-        feat_key (str): AnnData 对象中存储特征的 .obsm 的键。
-
-    Returns:
-        csr_matrix: 拼接后的稀疏特征邻接矩阵。
-    """
     num_slices = len(adata_list)
     feat_list = [adata.obsm[feat_key] for adata in adata_list]
     adj_blocks = []
@@ -298,18 +238,12 @@ def get_feat_adj(adata_list, k=10, feat_key='feat'):
         row_blocks = []
         for j in range(num_slices):
             if i == j:
-                # 对角线块：基于特征构建每个数据集内部的邻接图
                 adj_omics = construct_graph_by_feature(adata_list[i], key=feat_key, k=k)  # k 在内部也可以使用
                 row_blocks.append(adj_omics)
             elif j > i:
-                # 上三角块：构建数据集 i 到数据集 j 的跨数据集邻接矩阵
                 adj_bc = build_adjacency_matrix_inter_BC(feat_list[i], feat_list[j], K=k)
                 row_blocks.append(adj_bc)
             else:
-                # 下三角块：使用上三角块的转置
-                # 需要注意的是，这里的转置是为了连接性，build_adjacency_matrix_inter_BC 是有方向的
-                # 从 j 到 i 的连接，所以使用 build_adjacency_matrix_inter_BC(feat_list[j], feat_list[i], K=k).T 也可以
-                # 这里为了保持一致性，直接引用之前计算的转置
                 row_blocks.append(adj_blocks[j][i].T)
         adj_blocks.append(row_blocks)
 
@@ -322,7 +256,6 @@ def save_combined_GT():
         '2': '/home/hxl/Spa_Multi-omics/Gen_sim/multiome_ZINB_NB_sim_BC/Slice-2/GT.txt',
         '3': '/home/hxl/Spa_Multi-omics/Gen_sim/multiome_ZINB_NB_sim_BC/Slice-3/GT.txt',
     }
-    # 读取AnnData文件
     E11_0_S1_label = read_list_from_file(GT_paths['1'])
     E13_5_S1_label = read_list_from_file(GT_paths['2'])
     E15_5_S1_label = read_list_from_file(GT_paths['3'])
@@ -332,12 +265,9 @@ def save_combined_GT():
     print(len(combined_GT))
     print(set(combined_GT))
 
-    # 指定输出文件路径和文件名
     output_file = '/home/hxl/Spa_Multi-omics/0222/Data/Sim_0611/S1_S2_S3_Combined_BE_GT.txt'
 
-    # 打开文件进行写入，使用 'w' 模式
     with open(output_file, 'w') as f:
-        # 遍历列表中的每个整数元素，逐行写入文件
         for num in combined_GT:
             f.write(f"{num}\n")
     print('save results to ', output_file)

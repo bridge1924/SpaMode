@@ -249,8 +249,6 @@ def combine_BC(adata_list):
     feat_list = []
 
     for i, adata in enumerate(adata_list):
-        # print(adata.obsm['feat'].shape)
-        # X_list.append(adata.obsm['feat'])
         print(adata.X.shape)
         # X_list.append(adata.X)
         # _X = adata.X.toarray()
@@ -263,26 +261,19 @@ def combine_BC(adata_list):
     X_combined = np.concatenate(X_list, axis=0)
     spatial_combined = np.concatenate(spatial_list, axis=0)
 
-    # feat_combined = np.concatenate(feat_list, axis=0)
-
     batch_combined = np.concatenate(batch_list, axis=0)
 
     adata_combine = ad.AnnData(X=X_combined)
     adata_combine.obsm['spatial'] = spatial_combined
 
-    # 将 batch_combined 转为 Pandas Series，再转为 'category' 类型
     adata_combine.obs['src'] = batch_combined
-    # 假设 batch_array 是 NumPy 数组
-    batch_array = adata_combine.obs['src'].values  # 或从其他来源获取
+    batch_array = adata_combine.obs['src'].values
 
-    # 转换为分类类型
     adata_combine.obs['src'] = pd.Series(
         batch_array,
         dtype='category',
-        index=adata_combine.obs.index  # 确保索引一致
+        index=adata_combine.obs.index
     )
-
-    # print(adata_combine.obs['src'])
 
     return adata_combine
 
@@ -291,10 +282,7 @@ def RNA_preprocess(rna_ads, batch_corr=False, favor='adapted', n_hvg=3000, logno
                    key='dimred_bc', return_hvf=False):
     measured_ads = [ad for ad in rna_ads if ad is not None]
     ad_concat = combine_BC(measured_ads)
-    # 检查批次列是否存在空值
-    # print(ad_concat.obs[batch_key].isnull().sum())
-    #
-    # assert 0
+
 
     if favor == 'scanpy':
         if lognorm:
@@ -336,7 +324,6 @@ def ADT_preprocess(adt_ads, batch_corr=False, favor='clr', lognorm=True, scale=F
     ad_concat = sc.concat(measured_ads)
     if favor == 'clr':
         ad_concat = clr_normalize(ad_concat)
-        # if scale: sc.pp.scale(ad_concat)
     else:
         if lognorm:
             sc.pp.normalize_total(ad_concat, target_sum=1e4)

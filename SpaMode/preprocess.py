@@ -16,19 +16,12 @@ from sklearn.neighbors import kneighbors_graph
 
 
 def normalize_coordinates(coords):
-    """
-    将二维整数坐标归一化，使最左下角的坐标为 (0, 0)，最右上角的坐标为 (1, 1)
-    :param coords: N 个样本的二维坐标 (N, 2) 的 Tensor
-    :return: 归一化后的坐标
-    """
     if isinstance(coords, np.ndarray):
         coords = torch.from_numpy(coords).requires_grad_(False)
 
-    # 找到最小值和最大值
     min_coords = torch.min(coords, dim=0).values  # (x_min, y_min)
     max_coords = torch.max(coords, dim=0).values  # (x_max, y_max)
 
-    # 归一化公式
     normalized_coords = (coords - min_coords) / (max_coords - min_coords)
 
     return normalized_coords

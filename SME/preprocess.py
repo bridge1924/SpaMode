@@ -165,10 +165,6 @@ def construct_graph_by_coordinate(cell_position, n_neighbors=3):
 
 def transform_adjacent_matrix(adjacent):
     n_spot = adjacent['y'].max() + 1
-    # print(max(adjacent['x']))  # 查看最大的列索引
-    # print(max(adjacent['y']))  # 查看最大的列索引
-    # print(n_spot)  # 查看矩阵的列维度
-    # assert 0
     adj = coo_matrix((adjacent['value'], (adjacent['x'], adjacent['y'])), shape=(n_spot, n_spot))
     return adj
 

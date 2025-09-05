@@ -118,27 +118,15 @@ def peak_sets_alignment(adata_list, sep=(":", "-"), min_width=20, max_width=1000
 
 
 def gene_sets_alignment(adata_list):
-    # assert len(adata_list) > 1, "User needs to input more than two datasets"
-    # for i in range(len(adata_list)):
-    #     adata_list[i].var_names = [item.lower() for item in adata_list[i].var_names]
-    #     adata_list[i].var_names_make_unique()
-    # common_genes = np.intersect1d(adata_list[0].var_names, adata_list[1].var_names)
-    # for i in range(2, len(adata_list)):
-    #     common_genes = np.intersect1d(common_genes, adata_list[i].var_names)
-    # for i in range(len(adata_list)):
-    #     adata_list[i] = adata_list[i][:, common_genes]
 
-    # 1. 检查输入有效性
     assert len(adata_list) > 1, "至少需要两个数据集"
 
-    # 2. 统一基因名格式并去重
     for adata in adata_list:
         adata.var_names = [name.lower() for name in adata.var_names]
         adata.var_names_make_unique()
         if len(adata.var_names) != adata.shape[1]:
             raise ValueError("基因名处理导致维度不一致")
 
-    # 3. 计算共有基因
     common_genes = set(adata_list[0].var_names)
     for adata in adata_list[1:]:
         common_genes.intersection_update(adata.var_names)
@@ -147,17 +135,13 @@ def gene_sets_alignment(adata_list):
     if not common_genes:
         raise ValueError("无共有基因")
 
-    # 4. 切片并修复维度
     for i in range(len(adata_list)):
         try:
-            # 按名称切片
             adata_list[i] = adata_list[i][:, common_genes]
         except KeyError as e:
-            # 缺失基因时按位置索引
             gene_indices = [adata_list[i].var_names.get_loc(gene) for gene in common_genes]
             adata_list[i] = adata_list[i][:, gene_indices]
 
-        # 强制同步 var_names
         adata_list[i].var_names = common_genes
 
     return adata_list

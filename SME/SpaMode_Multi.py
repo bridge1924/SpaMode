@@ -145,8 +145,6 @@ class Train_SpaMode:
         if self.arg["optimizer"] == 'SGD':
             self.optimizer = torch.optim.SGD(list(self.model.parameters()) +
                                              list(self.ADV.parameters()),
-                                             # list(self.paramed_fuse_adj.parameters()),
-                                             # list(self.mask.parameters()),
                                              lr=self.learning_rate,
                                              momentum=0.9,
                                              weight_decay=self.weight_decay)
@@ -155,7 +153,6 @@ class Train_SpaMode:
         elif self.arg["optimizer"] == 'AdamW':
             self.optimizer = torch.optim.AdamW(list(self.model.parameters()) +
                                              list(self.ADV.parameters()),
-                                             # list(self.BC_clr.parameters()),
                                              lr=self.learning_rate,
                                               )
 
@@ -211,7 +208,6 @@ class Train_SpaMode:
         mask_emb_combined = F.normalize(results['emb_latent_combined'], p=2, eps=1e-12, dim=1)
 
         output = {
-                    # 'emb_latent_omics1': emb_omics1.detach().cpu().numpy(),
                   'mask_emb_combined': mask_emb_combined.detach().cpu().numpy(),
                   'Smoe': emb_combined.detach().cpu().numpy(),
                   'feat_omics1': self.features_omics1.detach().cpu().numpy(),
@@ -413,20 +409,17 @@ class MultiDiscriminator(nn.Module):
     def __init__(self, latent_dim=64, n_domains=4):
         super().__init__()
         self.n_domains = n_domains
-        # 梯度反转层（必须添加）
         self.grl = GradientReversal(alpha=1.0)
-        # 共享特征提取层
         self.shared = nn.Sequential(
             nn.Linear(latent_dim, 64),
             nn.ReLU()
         )
-        # 领域专属分类头
         self.heads = nn.ModuleList([
             nn.Linear(64, 1) for _ in range(n_domains)
         ])
 
     def forward(self, z, domain_id):
-        z = self.grl(z)  # 关键：输入判别器前先反转梯度
+        z = self.grl(z)
         shared_feat = self.shared(z)
         logits = self.heads[domain_id](shared_feat)
         return torch.sigmoid(logits)
